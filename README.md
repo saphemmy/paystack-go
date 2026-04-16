@@ -5,12 +5,16 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/saphemmy/paystack-go)](https://goreportcard.com/report/github.com/saphemmy/paystack-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-A Go SDK for [Paystack](https://paystack.com) — the African payments gateway
-that merchants use to accept card, bank, USSD, mobile-money, and transfer
-payments across Nigeria, Ghana, South Africa, Kenya, and Côte d'Ivoire.
+A production-grade Go SDK for [Paystack](https://paystack.com) — the African
+payments gateway that merchants use to accept card, bank, USSD, mobile-money,
+and transfer payments across Nigeria, Ghana, South Africa, Kenya, and
+Côte d'Ivoire.
 
-Lean, testable, caller-autonomous, and extensible at every layer. Built
-against the [Paystack REST API](https://paystack.com/docs/api/).
+Built against the [Paystack REST API](https://paystack.com/docs/api/) for
+teams that need to embed Paystack inside a larger platform — billing
+systems, marketplaces, banking-as-a-service, ERPs, fintech cores — where
+correctness, testability, observability, and interface stability matter
+more than convenience.
 
 **Useful links:**
 
@@ -22,6 +26,25 @@ against the [Paystack REST API](https://paystack.com/docs/api/).
 > **Status:** pre-1.0. Interfaces are stable on `main` but minor versions may
 > introduce additive changes to request/response structs. See
 > [Versioning](#versioning) for the compatibility policy.
+
+## Why this SDK
+
+Designed for enterprise systems rather than one-off scripts. Every design
+decision maps to a concrete operational concern:
+
+| Concern                  | How it's addressed                                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| **Testability**          | Every resource sits behind a `Transactor` / `Customeror` / … interface. Swap the `Backend` in tests — no live HTTP. |
+| **Idempotency**          | `Params.IdempotencyKey` is forwarded as a header on every write, so safe to retry across crashes.                   |
+| **Observability**        | `Logger` and `LeveledLogger` seams route SDK logs into your platform's logging stack (zap, slog, logrus, zerolog).  |
+| **Auditable errors**     | One `*Error` type with stable `Code` constants (`ErrCodeInvalidKey`, `ErrCodeRateLimited`, …), populated `Fields` on validation errors, and parsed `RetryAfter`. Works with `errors.As`. |
+| **No hidden retries**    | The SDK never retries. You own the policy — pair it with your existing circuit-breaker / retry library.             |
+| **No currency surprises**| Amounts are `int64` in kobo end-to-end. No silent conversion, no float.                                            |
+| **Constant-time crypto** | Webhook `Verify` uses `hmac.Equal`; body reads are `LimitReader`-capped to defend against oversized payloads.       |
+| **Stable contract**      | `ClientInterface`, `Backend`, service interfaces, and `Event` never break without a major bump — safe to depend on. |
+| **Framework-agnostic**   | Core SDK has one production dependency (`go-querystring`). Gin/Fiber/Echo adapters ship as separate modules so you only pay for what you use. |
+| **Context-first**        | Every call takes `context.Context` — timeouts and cancellation propagate through your request graph.                |
+| **Compliance surface**   | SDK never stores card data or keys at rest. Everything is stateless; caller owns the vault.                         |
 
 ## Design
 
