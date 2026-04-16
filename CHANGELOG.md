@@ -6,6 +6,21 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-04-16
+
+### Added
+
+- `SECURITY.md` with private-disclosure channels, SLAs, and scope.
+
+### Changed
+
+- README reframed for enterprise adoption; linked to `paystack.com` and
+  the Paystack API reference.
+- CI bumped to Node 24 action majors (`actions/checkout@v5`,
+  `actions/setup-go@v6`, `golangci/golangci-lint-action@v9`) ahead of
+  the Node 20 runner removal.
+- `.golangci.yml` migrated to `golangci-lint` v2 schema.
+
 ## [0.1.0] — 2026-04-16
 
 ### Added
@@ -26,5 +41,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `Logger` and `LeveledLogger` hooks.
 - Amounts standardised to int64 kobo end to end.
 
-[Unreleased]: https://github.com/saphemmy/paystack-go/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/saphemmy/paystack-go/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/saphemmy/paystack-go/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/saphemmy/paystack-go/releases/tag/v0.1.0
