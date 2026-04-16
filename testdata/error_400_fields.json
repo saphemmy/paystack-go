@@ -1,0 +1,8 @@
+{
+  "status": false,
+  "message": "Validation failed",
+  "errors": {
+    "email": "The email field is required",
+    "amount": "The amount must be a positive integer"
+  }
+}

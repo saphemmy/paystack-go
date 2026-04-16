@@ -1,7 +1,3 @@
-// Package paystack provides a Go client for the Paystack API.
-//
-// All monetary amounts are in kobo (1 NGN = 100 kobo) and are never silently
-// converted. Callers are responsible for currency handling.
 package paystack
 
 import (
@@ -53,9 +49,10 @@ type errorEnvelope struct {
 	Errors  json.RawMessage `json:"errors,omitempty"`
 }
 
-// parseError converts a non-2xx HTTP response into a *Error. body is the
+// ParseError converts a non-2xx HTTP response into a *Error. body is the
 // already-read response body; caller is responsible for draining the response.
-func parseError(resp *http.Response, body []byte) *Error {
+// Exposed for authors of custom Backend implementations.
+func ParseError(resp *http.Response, body []byte) *Error {
 	code := codeForStatus(resp.StatusCode)
 	err := &Error{
 		Code:       code,

@@ -51,3 +51,12 @@ type Response[T any] struct {
 	Message string `json:"message"`
 	Data    T      `json:"data"`
 }
+
+// paramCarrier is satisfied by any request struct that embeds Params. The
+// backend uses it to pull the idempotency key out without reflecting over
+// every request type.
+type paramCarrier interface {
+	paystackParams() Params
+}
+
+func (p Params) paystackParams() Params { return p }

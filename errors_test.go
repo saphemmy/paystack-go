@@ -79,7 +79,7 @@ func TestParseError_JSONEnvelope(t *testing.T) {
 	}
 	body := []byte(`{"status":false,"message":"Validation failed","errors":{"email":"is required","amount":"must be positive"}}`)
 
-	err := parseError(resp, body)
+	err := ParseError(resp, body)
 	if err.Code != ErrCodeInvalidRequest {
 		t.Fatalf("Code = %q, want %q", err.Code, ErrCodeInvalidRequest)
 	}
@@ -113,7 +113,7 @@ func TestParseError_HTMLBody(t *testing.T) {
 				StatusCode: http.StatusBadGateway,
 				Header:     http.Header{"Content-Type": []string{tc.header}},
 			}
-			err := parseError(resp, tc.body)
+			err := ParseError(resp, tc.body)
 			if err.Code != ErrCodeServerError {
 				t.Fatalf("Code = %q, want %q", err.Code, ErrCodeServerError)
 			}
@@ -142,7 +142,7 @@ func TestParseError_RetryAfter(t *testing.T) {
 				StatusCode: http.StatusTooManyRequests,
 				Header:     http.Header{"Retry-After": []string{tc.header}},
 			}
-			err := parseError(resp, []byte(`{"status":false,"message":"rate limited"}`))
+			err := ParseError(resp, []byte(`{"status":false,"message":"rate limited"}`))
 			if err.Code != ErrCodeRateLimited {
 				t.Fatalf("Code = %q, want %q", err.Code, ErrCodeRateLimited)
 			}
@@ -158,7 +158,7 @@ func TestParseError_FallbackOnBadJSON(t *testing.T) {
 		StatusCode: http.StatusInternalServerError,
 		Header:     http.Header{"Content-Type": []string{"application/json"}},
 	}
-	err := parseError(resp, []byte(`not json at all`))
+	err := ParseError(resp, []byte(`not json at all`))
 	if err.Code != ErrCodeServerError {
 		t.Fatalf("Code = %q, want %q", err.Code, ErrCodeServerError)
 	}
@@ -172,7 +172,7 @@ func TestParseError_UnknownStatusFallback(t *testing.T) {
 		StatusCode: 599,
 		Header:     http.Header{"Content-Type": []string{"application/json"}},
 	}
-	err := parseError(resp, []byte(`garbage`))
+	err := ParseError(resp, []byte(`garbage`))
 	if err.Code != ErrCodeServerError {
 		t.Fatalf("Code = %q, want %q", err.Code, ErrCodeServerError)
 	}
