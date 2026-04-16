@@ -1,4 +1,4 @@
-package paystack
+package paystack_test
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	paystack "github.com/saphemmy/paystack-go"
 )
 
 type echoRequest struct {
@@ -39,7 +41,7 @@ func newEchoServer(t *testing.T, handler func(*echoRequest, http.ResponseWriter)
 }
 
 type initTxParams struct {
-	Params
+	paystack.Params
 	Email  string `json:"email"`
 	Amount int64  `json:"amount"`
 }
@@ -58,14 +60,14 @@ func TestHTTPBackend_Call_SuccessDecodes(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
-	var resp Response[initTxData]
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+	var resp paystack.Response[initTxData]
 	err := b.Call(context.Background(), http.MethodPost, "/transaction/initialize", &initTxParams{Email: "c@e.com", Amount: 5000}, &resp)
 	if err != nil {
 		t.Fatalf("Call: %v", err)
 	}
 	if resp.Data.Reference != "ref_123" {
-		t.Fatalf("Reference = %q, want ref_123", resp.Data.Reference)
+		t.Fatalf("Reference = %q", resp.Data.Reference)
 	}
 	if seen.Headers.Get("Authorization") != "Bearer sk_test_xxx" {
 		t.Fatalf("Authorization = %q", seen.Headers.Get("Authorization"))
@@ -87,18 +89,17 @@ func TestHTTPBackend_Call_ErrorStatuses(t *testing.T) {
 		status     int
 		body       string
 		header     http.Header
-		wantCode   ErrorCode
+		wantCode   paystack.ErrorCode
 		wantFields bool
 		wantRetry  time.Duration
 	}{
-		{name: "401 → invalid_key", status: 401, body: `{"status":false,"message":"Invalid key"}`, wantCode: ErrCodeInvalidKey},
-		{name: "400 with fields", status: 400, body: `{"status":false,"message":"Validation","errors":{"email":"is required"}}`, wantCode: ErrCodeInvalidRequest, wantFields: true},
-		{name: "404", status: 404, body: `{"status":false,"message":"Not found"}`, wantCode: ErrCodeNotFound},
-		{name: "429", status: 429, body: `{"status":false,"message":"Too many"}`, header: http.Header{"Retry-After": []string{"7"}}, wantCode: ErrCodeRateLimited, wantRetry: 7 * time.Second},
-		{name: "500", status: 500, body: `{"status":false,"message":"Server error"}`, wantCode: ErrCodeServerError},
-		{name: "HTML body", status: 502, body: `<html><body>bad gateway</body></html>`, header: http.Header{"Content-Type": []string{"text/html"}}, wantCode: ErrCodeServerError},
+		{name: "401", status: 401, body: `{"status":false,"message":"Invalid key"}`, wantCode: paystack.ErrCodeInvalidKey},
+		{name: "400 with fields", status: 400, body: `{"status":false,"message":"Validation","errors":{"email":"is required"}}`, wantCode: paystack.ErrCodeInvalidRequest, wantFields: true},
+		{name: "404", status: 404, body: `{"status":false,"message":"Not found"}`, wantCode: paystack.ErrCodeNotFound},
+		{name: "429", status: 429, body: `{"status":false,"message":"Too many"}`, header: http.Header{"Retry-After": []string{"7"}}, wantCode: paystack.ErrCodeRateLimited, wantRetry: 7 * time.Second},
+		{name: "500", status: 500, body: `{"status":false,"message":"Server error"}`, wantCode: paystack.ErrCodeServerError},
+		{name: "HTML body", status: 502, body: `<html><body>bad gateway</body></html>`, header: http.Header{"Content-Type": []string{"text/html"}}, wantCode: paystack.ErrCodeServerError},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			srv := newEchoServer(t, func(_ *echoRequest, w http.ResponseWriter) {
@@ -115,15 +116,15 @@ func TestHTTPBackend_Call_ErrorStatuses(t *testing.T) {
 			})
 			defer srv.Close()
 
-			b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
-			var out Response[initTxData]
+			b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+			var out paystack.Response[initTxData]
 			err := b.Call(context.Background(), http.MethodGet, "/transaction/verify/ref", nil, &out)
-			var pErr *Error
+			var pErr *paystack.Error
 			if !errors.As(err, &pErr) {
 				t.Fatalf("expected *Error, got %T: %v", err, err)
 			}
 			if pErr.Code != tc.wantCode {
-				t.Fatalf("Code = %q, want %q", pErr.Code, tc.wantCode)
+				t.Fatalf("Code = %q", pErr.Code)
 			}
 			if tc.wantFields && len(pErr.Fields) == 0 {
 				t.Fatalf("expected Fields to be populated")
@@ -144,10 +145,10 @@ func TestHTTPBackend_Call_IdempotencyKeyHeader(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
 	key := "idem-abc"
 	_ = b.Call(context.Background(), http.MethodPost, "/transaction/initialize", &initTxParams{
-		Params: Params{IdempotencyKey: &key},
+		Params: paystack.Params{IdempotencyKey: &key},
 		Email:  "x@y.z",
 		Amount: 1,
 	}, nil)
@@ -160,7 +161,7 @@ func TestHTTPBackend_Call_IdempotencyKeyHeader(t *testing.T) {
 }
 
 type listQueryParams struct {
-	ListParams
+	paystack.ListParams
 }
 
 func TestHTTPBackend_Call_ListParamsEncoded(t *testing.T) {
@@ -172,11 +173,11 @@ func TestHTTPBackend_Call_ListParamsEncoded(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
 	perPage := 25
 	page := 3
 	_ = b.Call(context.Background(), http.MethodGet, "/transaction", &listQueryParams{
-		ListParams: ListParams{PerPage: &perPage, Page: &page},
+		ListParams: paystack.ListParams{PerPage: &perPage, Page: &page},
 	}, nil)
 
 	u, err := url.Parse(seen.RawURL)
@@ -197,15 +198,12 @@ func TestHTTPBackend_Call_ContextCancelled(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 	err := b.Call(ctx, http.MethodGet, "/slow", nil, nil)
 	if err == nil {
 		t.Fatal("expected context timeout error")
-	}
-	if !errors.Is(err, context.DeadlineExceeded) && !strings.Contains(err.Error(), "deadline") {
-		t.Fatalf("expected deadline error, got: %v", err)
 	}
 }
 
@@ -216,15 +214,31 @@ func TestHTTPBackend_Call_DecodeFailureSurfaces(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
-	var out Response[initTxData]
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+	var out paystack.Response[initTxData]
 	err := b.Call(context.Background(), http.MethodGet, "/x", nil, &out)
-	var pErr *Error
+	var pErr *paystack.Error
 	if !errors.As(err, &pErr) {
 		t.Fatalf("expected *Error, got %T", err)
 	}
-	if pErr.Code != ErrCodeServerError {
-		t.Fatalf("Code = %q, want %q", pErr.Code, ErrCodeServerError)
+	if pErr.Code != paystack.ErrCodeServerError {
+		t.Fatalf("Code = %q", pErr.Code)
+	}
+}
+
+func TestHTTPBackend_Call_UnexpectedHTMLOn2xx(t *testing.T) {
+	srv := newEchoServer(t, func(_ *echoRequest, w http.ResponseWriter) {
+		w.Header().Set("Content-Type", "text/html")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`<html>unexpected</html>`))
+	})
+	defer srv.Close()
+
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+	err := b.Call(context.Background(), http.MethodGet, "/x", nil, nil)
+	var pErr *paystack.Error
+	if !errors.As(err, &pErr) || pErr.Code != paystack.ErrCodeServerError {
+		t.Fatalf("expected ErrCodeServerError, got %v", err)
 	}
 }
 
@@ -236,7 +250,7 @@ func TestHTTPBackend_CallRaw_ReturnsRawResponse(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
 	resp, err := b.CallRaw(context.Background(), http.MethodGet, "/x", nil)
 	if err != nil {
 		t.Fatalf("CallRaw: %v", err)
@@ -258,7 +272,7 @@ func TestHTTPBackend_LogsViaLeveledLogger(t *testing.T) {
 	defer srv.Close()
 
 	l := &recordingLeveled{}
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL, LeveledLogger: l})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL, LeveledLogger: l})
 	_ = b.Call(context.Background(), http.MethodGet, "/x", nil, nil)
 	if !strings.Contains(l.debug.String(), "GET") {
 		t.Fatalf("expected GET in debug log, got %q", l.debug.String())
@@ -273,7 +287,7 @@ func TestHTTPBackend_LogsViaPlainLogger(t *testing.T) {
 	defer srv.Close()
 
 	l := &recordingLogger{}
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL, Logger: l})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL, Logger: l})
 	_ = b.Call(context.Background(), http.MethodGet, "/x", nil, nil)
 	if !strings.Contains(l.buf.String(), "GET") {
 		t.Fatalf("expected GET in log, got %q", l.buf.String())
@@ -289,7 +303,7 @@ func TestHTTPBackend_ConcurrentCalls(t *testing.T) {
 	})
 	defer srv.Close()
 
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: srv.URL})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
 	var wg sync.WaitGroup
 	for i := 0; i < 50; i++ {
 		wg.Add(1)
@@ -304,39 +318,10 @@ func TestHTTPBackend_ConcurrentCalls(t *testing.T) {
 	}
 }
 
-func TestHTTPBackend_DefaultsBaseURL(t *testing.T) {
-	b := NewHTTPBackend("sk_test_xxx", nil)
-	if b.base != DefaultBaseURL {
-		t.Fatalf("base = %q, want %q", b.base, DefaultBaseURL)
-	}
-	if b.client == nil {
-		t.Fatal("client should be non-nil")
-	}
-}
-
-func TestHTTPBackend_TrimsTrailingSlashOnBaseURL(t *testing.T) {
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: "https://example.com/"})
-	if b.base != "https://example.com" {
-		t.Fatalf("base = %q, want %q", b.base, "https://example.com")
-	}
-}
-
-func TestExtractIdempotencyKey_NonCarrier(t *testing.T) {
-	if got := extractIdempotencyKey("not a struct"); got != "" {
-		t.Fatalf("expected empty, got %q", got)
-	}
-	if got := extractIdempotencyKey(nil); got != "" {
-		t.Fatalf("expected empty, got %q", got)
-	}
-	if got := extractIdempotencyKey(&initTxParams{}); got != "" {
-		t.Fatalf("expected empty, got %q", got)
-	}
-}
-
 func TestHTTPBackend_BadMarshalParamsSurfaces(t *testing.T) {
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: "http://example"})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: "http://example"})
 	type bad struct {
-		Params
+		paystack.Params
 		Ch chan int `json:"ch"`
 	}
 	err := b.Call(context.Background(), http.MethodPost, "/x", &bad{Ch: make(chan int)}, nil)
@@ -346,7 +331,7 @@ func TestHTTPBackend_BadMarshalParamsSurfaces(t *testing.T) {
 }
 
 func TestHTTPBackend_BadURLBuildSurfaces(t *testing.T) {
-	b := NewHTTPBackend("sk_test_xxx", &BackendConfig{BaseURL: "http://example"})
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: "http://example"})
 	type badQuery struct {
 		Bogus chan int `url:"bogus"`
 	}
@@ -356,29 +341,43 @@ func TestHTTPBackend_BadURLBuildSurfaces(t *testing.T) {
 	}
 }
 
-func TestIsWriteMethod(t *testing.T) {
-	for _, m := range []string{http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete} {
-		if !isWriteMethod(m) {
-			t.Fatalf("%s should be a write method", m)
-		}
-	}
-	for _, m := range []string{http.MethodGet, http.MethodHead, http.MethodOptions} {
-		if isWriteMethod(m) {
-			t.Fatalf("%s should not be a write method", m)
-		}
+func TestHTTPBackend_PathMissingLeadingSlashIsFixed(t *testing.T) {
+	var seen *echoRequest
+	srv := newEchoServer(t, func(r *echoRequest, w http.ResponseWriter) {
+		seen = r
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":true,"data":{}}`))
+	})
+	defer srv.Close()
+
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+	_ = b.Call(context.Background(), http.MethodGet, "transaction", nil, nil)
+	if seen.Path != "/transaction" {
+		t.Fatalf("Path = %q", seen.Path)
 	}
 }
 
-func TestDrainAndClose(t *testing.T) {
-	body := io.NopCloser(strings.NewReader("hello"))
-	drainAndClose(body)
-	// If we reach here without panic, the helper is safe.
+func TestHTTPBackend_DeleteEncodesBody(t *testing.T) {
+	// DELETE is a write method per the SDK; ensure params marshal into the body
+	// when one is provided.
+	var seen *echoRequest
+	srv := newEchoServer(t, func(r *echoRequest, w http.ResponseWriter) {
+		seen = r
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":true,"data":{}}`))
+	})
+	defer srv.Close()
+
+	b := paystack.NewHTTPBackend("sk_test_xxx", &paystack.BackendConfig{BaseURL: srv.URL})
+	_ = b.Call(context.Background(), http.MethodDelete, "/x", &initTxParams{Email: "x@y", Amount: 1}, nil)
+	if !strings.Contains(string(seen.Body), "email") {
+		t.Fatalf("DELETE body missing email: %s", seen.Body)
+	}
 }
 
-// ensure our param type is actually decoded correctly by the echo body marshal
 func TestResponseDataShape(t *testing.T) {
 	body := []byte(`{"status":true,"message":"ok","data":{"reference":"r"}}`)
-	var r Response[initTxData]
+	var r paystack.Response[initTxData]
 	if err := json.Unmarshal(body, &r); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}

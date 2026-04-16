@@ -1,0 +1,38 @@
+{
+  "status": true,
+  "message": "Transactions retrieved",
+  "data": [
+    {
+      "id": 4099260516,
+      "domain": "test",
+      "status": "success",
+      "reference": "re4lyvq3s3",
+      "amount": 40333,
+      "currency": "NGN",
+      "gateway_response": "Successful",
+      "channel": "card",
+      "paid_at": "2024-08-22T09:15:02.000Z",
+      "created_at": "2024-08-22T09:14:24.000Z",
+      "fees": 10283
+    },
+    {
+      "id": 4099260517,
+      "domain": "test",
+      "status": "failed",
+      "reference": "re4lyvq3s4",
+      "amount": 50000,
+      "currency": "NGN",
+      "gateway_response": "Declined",
+      "channel": "card",
+      "created_at": "2024-08-22T10:01:00.000Z",
+      "fees": 0
+    }
+  ],
+  "meta": {
+    "total": 2,
+    "skipped": 0,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

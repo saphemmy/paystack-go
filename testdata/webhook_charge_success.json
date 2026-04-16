@@ -1,0 +1,17 @@
+{
+  "event": "charge.success",
+  "data": {
+    "id": 4099260516,
+    "domain": "test",
+    "status": "success",
+    "reference": "re4lyvq3s3",
+    "amount": 40333,
+    "currency": "NGN",
+    "paid_at": "2024-08-22T09:15:02.000Z",
+    "customer": {
+      "id": 181873746,
+      "customer_code": "CUS_i5yosncbl2jzk5n",
+      "email": "test@example.com"
+    }
+  }
+}

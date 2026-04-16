@@ -1,0 +1,16 @@
+{
+  "status": true,
+  "message": "Subscription successfully created",
+  "data": {
+    "id": 80110,
+    "domain": "test",
+    "status": "active",
+    "subscription_code": "SUB_vsyqdmlzble3uii",
+    "email_token": "ctt824k16n34u69",
+    "amount": 500000,
+    "cron_expression": "0 0 1 * *",
+    "next_payment_date": "2024-03-01T00:00:00.000Z",
+    "createdAt": "2024-02-01T00:00:00.000Z",
+    "updatedAt": "2024-02-01T00:00:00.000Z"
+  }
+}

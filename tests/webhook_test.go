@@ -1,4 +1,4 @@
-package paystack
+package paystack_test
 
 import (
 	"bytes"
@@ -12,9 +12,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	paystack "github.com/saphemmy/paystack-go"
 )
 
-func signPayload(t testing.TB, body []byte, secret []byte) string {
+func signPayload(t testing.TB, body, secret []byte) string {
 	t.Helper()
 	mac := hmac.New(sha512.New, secret)
 	mac.Write(body)
@@ -44,7 +46,7 @@ func TestVerify(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Verify(tc.body, tc.sig, tc.secret); got != tc.want {
+			if got := paystack.Verify(tc.body, tc.sig, tc.secret); got != tc.want {
 				t.Fatalf("Verify = %v, want %v", got, tc.want)
 			}
 		})
@@ -69,17 +71,17 @@ func TestParseEvent(t *testing.T) {
 		name    string
 		body    []byte
 		wantErr bool
-		want    EventType
+		want    paystack.EventType
 	}{
-		{"charge.success", []byte(`{"event":"charge.success","data":{}}`), false, EventChargeSuccess},
-		{"transfer.failed", []byte(`{"event":"transfer.failed","data":{}}`), false, EventTransferFailed},
+		{"charge.success", []byte(`{"event":"charge.success","data":{}}`), false, paystack.EventChargeSuccess},
+		{"transfer.failed", []byte(`{"event":"transfer.failed","data":{}}`), false, paystack.EventTransferFailed},
 		{"malformed json", []byte(`{"event":`), true, ""},
 		{"missing event field", []byte(`{"data":{}}`), true, ""},
 		{"empty body", []byte(``), true, ""},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			ev, err := ParseEvent(tc.body)
+			ev, err := paystack.ParseEvent(tc.body)
 			if tc.wantErr {
 				if err == nil {
 					t.Fatal("expected error")
@@ -90,7 +92,7 @@ func TestParseEvent(t *testing.T) {
 				t.Fatalf("ParseEvent: %v", err)
 			}
 			if ev.Type != tc.want {
-				t.Fatalf("Type = %q, want %q", ev.Type, tc.want)
+				t.Fatalf("Type = %q", ev.Type)
 			}
 		})
 	}
@@ -98,7 +100,7 @@ func TestParseEvent(t *testing.T) {
 
 func TestParseEvent_DataKeptAsRaw(t *testing.T) {
 	body := []byte(`{"event":"charge.success","data":{"reference":"ref_1","amount":5000}}`)
-	ev, err := ParseEvent(body)
+	ev, err := paystack.ParseEvent(body)
 	if err != nil {
 		t.Fatalf("ParseEvent: %v", err)
 	}
@@ -115,19 +117,18 @@ func TestParseEvent_DataKeptAsRaw(t *testing.T) {
 }
 
 func TestEventTypeConstants(t *testing.T) {
-	// Spot-check we didn't typo any of the commonly-asserted events.
-	wants := map[EventType]string{
-		EventChargeSuccess:         "charge.success",
-		EventTransferSuccess:       "transfer.success",
-		EventTransferFailed:        "transfer.failed",
-		EventTransferReversed:      "transfer.reversed",
-		EventSubscriptionCreate:    "subscription.create",
-		EventSubscriptionDisable:   "subscription.disable",
-		EventInvoiceCreate:         "invoice.create",
-		EventInvoiceUpdate:         "invoice.update",
-		EventPaymentRequestPending: "paymentrequest.pending",
-		EventPaymentRequestSuccess: "paymentrequest.success",
-		EventRefundProcessed:       "refund.processed",
+	wants := map[paystack.EventType]string{
+		paystack.EventChargeSuccess:         "charge.success",
+		paystack.EventTransferSuccess:       "transfer.success",
+		paystack.EventTransferFailed:        "transfer.failed",
+		paystack.EventTransferReversed:      "transfer.reversed",
+		paystack.EventSubscriptionCreate:    "subscription.create",
+		paystack.EventSubscriptionDisable:   "subscription.disable",
+		paystack.EventInvoiceCreate:         "invoice.create",
+		paystack.EventInvoiceUpdate:         "invoice.update",
+		paystack.EventPaymentRequestPending: "paymentrequest.pending",
+		paystack.EventPaymentRequestSuccess: "paymentrequest.success",
+		paystack.EventRefundProcessed:       "refund.processed",
 	}
 	for got, want := range wants {
 		if string(got) != want {
@@ -140,13 +141,13 @@ func TestParseWebhook_Success(t *testing.T) {
 	secret := []byte("sk_test_x")
 	body := []byte(`{"event":"charge.success","data":{"reference":"ref"}}`)
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	req.Header.Set(WebhookSignatureHeader, signPayload(t, body, secret))
+	req.Header.Set(paystack.WebhookSignatureHeader, signPayload(t, body, secret))
 
-	ev, err := ParseWebhook(req, secret)
+	ev, err := paystack.ParseWebhook(req, secret)
 	if err != nil {
 		t.Fatalf("ParseWebhook: %v", err)
 	}
-	if ev.Type != EventChargeSuccess {
+	if ev.Type != paystack.EventChargeSuccess {
 		t.Fatalf("Type = %q", ev.Type)
 	}
 }
@@ -155,10 +156,10 @@ func TestParseWebhook_InvalidSignature(t *testing.T) {
 	secret := []byte("sk_test_x")
 	body := []byte(`{"event":"charge.success","data":{}}`)
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	req.Header.Set(WebhookSignatureHeader, "deadbeef")
+	req.Header.Set(paystack.WebhookSignatureHeader, "deadbeef")
 
-	_, err := ParseWebhook(req, secret)
-	if !errors.Is(err, ErrInvalidSignature) {
+	_, err := paystack.ParseWebhook(req, secret)
+	if !errors.Is(err, paystack.ErrInvalidSignature) {
 		t.Fatalf("expected ErrInvalidSignature, got %v", err)
 	}
 }
@@ -167,38 +168,36 @@ func TestParseWebhook_MalformedBodyAfterValidSignature(t *testing.T) {
 	secret := []byte("sk_test_x")
 	body := []byte(`{"event":`)
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	req.Header.Set(WebhookSignatureHeader, signPayload(t, body, secret))
+	req.Header.Set(paystack.WebhookSignatureHeader, signPayload(t, body, secret))
 
-	_, err := ParseWebhook(req, secret)
+	_, err := paystack.ParseWebhook(req, secret)
 	if err == nil {
 		t.Fatal("expected parse error after valid signature")
 	}
-	if errors.Is(err, ErrInvalidSignature) {
+	if errors.Is(err, paystack.ErrInvalidSignature) {
 		t.Fatal("should not report signature error on malformed body")
 	}
 }
 
 func TestParseWebhook_OversizedBodyRejected(t *testing.T) {
 	secret := []byte("sk_test_x")
-	large := bytes.Repeat([]byte("A"), MaxWebhookBodyBytes+1024)
+	large := bytes.Repeat([]byte("A"), paystack.MaxWebhookBodyBytes+1024)
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(large))
-	// Signature would match the full payload but ParseWebhook truncates
-	// before verifying, so verification must fail.
-	req.Header.Set(WebhookSignatureHeader, signPayload(t, large, secret))
+	req.Header.Set(paystack.WebhookSignatureHeader, signPayload(t, large, secret))
 
-	_, err := ParseWebhook(req, secret)
-	if !errors.Is(err, ErrInvalidSignature) {
+	_, err := paystack.ParseWebhook(req, secret)
+	if !errors.Is(err, paystack.ErrInvalidSignature) {
 		t.Fatalf("expected signature failure on truncated body, got %v", err)
 	}
 }
 
 func TestParseWebhook_ReadBodyError(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/webhook", errReader{})
-	_, err := ParseWebhook(req, []byte("secret"))
+	_, err := paystack.ParseWebhook(req, []byte("secret"))
 	if err == nil {
 		t.Fatal("expected read error")
 	}
-	if errors.Is(err, ErrInvalidSignature) {
+	if errors.Is(err, paystack.ErrInvalidSignature) {
 		t.Fatal("read errors must not be masked as signature errors")
 	}
 }

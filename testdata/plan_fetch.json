@@ -1,0 +1,12 @@
+{
+  "status": true,
+  "message": "Plan retrieved",
+  "data": {
+    "id": 28,
+    "name": "Monthly Gold",
+    "plan_code": "PLN_gx2wn530m0i3w3m",
+    "amount": 500000,
+    "interval": "monthly",
+    "currency": "NGN"
+  }
+}

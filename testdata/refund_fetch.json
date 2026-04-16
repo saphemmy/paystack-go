@@ -1,0 +1,12 @@
+{
+  "status": true,
+  "message": "Refund retrieved",
+  "data": {
+    "id": 3018284,
+    "transaction": 4099260516,
+    "amount": 40333,
+    "currency": "NGN",
+    "status": "processed",
+    "refunded_at": "2024-02-15T01:00:00.000Z"
+  }
+}

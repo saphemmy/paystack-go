@@ -1,9 +1,11 @@
-package paystack
+package paystack_test
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	paystack "github.com/saphemmy/paystack-go"
 )
 
 func TestTime_UnmarshalJSON(t *testing.T) {
@@ -11,12 +13,12 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		name    string
 		in      string
 		wantErr bool
-		check   func(t *testing.T, got Time)
+		check   func(t *testing.T, got paystack.Time)
 	}{
 		{
 			name: "RFC3339",
 			in:   `"2024-01-15T10:30:00Z"`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if got.Year() != 2024 || got.Month() != time.January || got.Day() != 15 {
 					t.Fatalf("date mismatch: %v", got.Time)
 				}
@@ -25,7 +27,7 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "RFC3339 with milliseconds",
 			in:   `"2024-01-15T10:30:00.123Z"`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if got.Nanosecond() == 0 {
 					t.Fatal("nanoseconds should be preserved")
 				}
@@ -34,7 +36,7 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "space separator",
 			in:   `"2024-01-15 10:30:00"`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if got.Hour() != 10 || got.Minute() != 30 {
 					t.Fatalf("time mismatch: %v", got.Time)
 				}
@@ -43,7 +45,7 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "date only",
 			in:   `"2024-01-15"`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if got.Year() != 2024 {
 					t.Fatalf("year mismatch: %v", got.Time)
 				}
@@ -52,7 +54,7 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "RFC3339 with offset",
 			in:   `"2024-01-15T10:30:00+01:00"`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if got.Hour() != 10 {
 					t.Fatalf("hour mismatch: %v", got.Time)
 				}
@@ -61,7 +63,7 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "empty string",
 			in:   `""`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if !got.IsZero() {
 					t.Fatal("expected zero Time for empty string")
 				}
@@ -70,22 +72,17 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 		{
 			name: "literal null",
 			in:   `null`,
-			check: func(t *testing.T, got Time) {
+			check: func(t *testing.T, got paystack.Time) {
 				if !got.IsZero() {
 					t.Fatal("expected zero Time for null")
 				}
 			},
 		},
-		{
-			name:    "garbage",
-			in:      `"not a date"`,
-			wantErr: true,
-		},
+		{name: "garbage", in: `"not a date"`, wantErr: true},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var got Time
+			var got paystack.Time
 			err := got.UnmarshalJSON([]byte(tc.in))
 			if tc.wantErr {
 				if err == nil {
@@ -106,19 +103,11 @@ func TestTime_UnmarshalJSON(t *testing.T) {
 func TestTime_MarshalJSON(t *testing.T) {
 	tests := []struct {
 		name string
-		in   Time
+		in   paystack.Time
 		want string
 	}{
-		{
-			name: "zero value is null",
-			in:   Time{},
-			want: "null",
-		},
-		{
-			name: "non-zero value is RFC3339",
-			in:   Time{Time: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)},
-			want: `"2024-01-15T10:30:00Z"`,
-		},
+		{"zero value is null", paystack.Time{}, "null"},
+		{"non-zero is RFC3339", paystack.Time{Time: time.Date(2024, 1, 15, 10, 30, 0, 0, time.UTC)}, `"2024-01-15T10:30:00Z"`},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -134,12 +123,12 @@ func TestTime_MarshalJSON(t *testing.T) {
 }
 
 func TestTime_RoundTrip(t *testing.T) {
-	original := Time{Time: time.Date(2024, 6, 12, 14, 30, 0, 0, time.UTC)}
+	original := paystack.Time{Time: time.Date(2024, 6, 12, 14, 30, 0, 0, time.UTC)}
 	data, err := json.Marshal(original)
 	if err != nil {
 		t.Fatalf("Marshal: %v", err)
 	}
-	var decoded Time
+	var decoded paystack.Time
 	if err := json.Unmarshal(data, &decoded); err != nil {
 		t.Fatalf("Unmarshal: %v", err)
 	}

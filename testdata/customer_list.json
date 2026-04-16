@@ -1,0 +1,20 @@
+{
+  "status": true,
+  "message": "Customers retrieved",
+  "data": [
+    {
+      "id": 181873746,
+      "customer_code": "CUS_i5yosncbl2jzk5n",
+      "email": "test@example.com",
+      "first_name": "Test",
+      "last_name": "Payer"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "skipped": 0,
+    "perPage": 50,
+    "page": 1,
+    "pageCount": 1
+  }
+}

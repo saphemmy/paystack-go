@@ -1,0 +1,16 @@
+{
+  "status": true,
+  "message": "Customer created",
+  "data": {
+    "id": 181873746,
+    "domain": "test",
+    "customer_code": "CUS_i5yosncbl2jzk5n",
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "Payer",
+    "phone": "",
+    "risk_action": "default",
+    "createdAt": "2024-01-01T00:00:00.000Z",
+    "updatedAt": "2024-01-01T00:00:00.000Z"
+  }
+}

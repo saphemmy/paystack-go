@@ -1,0 +1,12 @@
+{
+  "status": true,
+  "message": "Transactions retrieved",
+  "data": [],
+  "meta": {
+    "total": 120,
+    "skipped": 120,
+    "perPage": 50,
+    "page": 5,
+    "pageCount": 3
+  }
+}

@@ -1,9 +1,11 @@
-package paystack
+package paystack_test
 
 import (
 	"bytes"
 	"fmt"
 	"testing"
+
+	paystack "github.com/saphemmy/paystack-go"
 )
 
 type recordingLogger struct {
@@ -32,8 +34,8 @@ func (r *recordingLeveled) Errorf(format string, args ...interface{}) {
 }
 
 func TestLogger_InterfaceIsSatisfied(t *testing.T) {
-	var _ Logger = (*recordingLogger)(nil)
-	var _ LeveledLogger = (*recordingLeveled)(nil)
+	var _ paystack.Logger = (*recordingLogger)(nil)
+	var _ paystack.LeveledLogger = (*recordingLeveled)(nil)
 }
 
 func TestLogger_PrintfRoutesArgs(t *testing.T) {

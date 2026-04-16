@@ -1,0 +1,17 @@
+{
+  "status": true,
+  "message": "Refund has been queued for processing",
+  "data": {
+    "id": 3018284,
+    "domain": "test",
+    "transaction": 4099260516,
+    "dispute": 0,
+    "amount": 40333,
+    "deducted_amount": 40333,
+    "currency": "NGN",
+    "channel": "migs",
+    "status": "pending",
+    "createdAt": "2024-02-15T00:00:00.000Z",
+    "updatedAt": "2024-02-15T00:00:00.000Z"
+  }
+}

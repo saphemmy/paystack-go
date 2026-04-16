@@ -1,0 +1,15 @@
+{
+  "status": true,
+  "message": "Transfer retrieved",
+  "data": {
+    "id": 14785,
+    "amount": 3000,
+    "currency": "NGN",
+    "reference": "ref_001",
+    "status": "success",
+    "transfer_code": "TRF_1ptvuv321ahaa7q",
+    "recipient": 28,
+    "createdAt": "2024-02-10T00:00:00.000Z",
+    "updatedAt": "2024-02-10T00:01:00.000Z"
+  }
+}
