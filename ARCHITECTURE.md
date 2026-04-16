@@ -8,9 +8,6 @@ The core Paystack Go SDK. Designed to be:
 - Composed into larger systems via stable interfaces
 - Fully tested at every layer without live HTTP
 
-The relationship mirrors `stripe/stripe-php` (core) and `laravel/cashier` (extension).
-Framework packages import this package's interfaces — never its concrete types.
-
 ---
 
 ## Repository Layout
@@ -180,7 +177,7 @@ invoice.create/update, paymentrequest.pending/success.
 
 ### `paystack.go`
 
-- Package-level `var Key string` for simple usage (mirrors Stripe).
+- Package-level `var Key string` for simple usage, settable once at program start.
 - Pointer helpers: `String`, `Int64`, `Bool`, `Float64`. Used for optional fields in
   request structs. Never force callers to take addresses of literals inline.
 

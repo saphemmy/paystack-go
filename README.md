@@ -13,9 +13,6 @@ at every layer.
 
 ## Design
 
-The relationship between this package and framework integrations mirrors
-`stripe/stripe-php` (core) and `laravel/cashier` (extension):
-
 - `paystack-go` is the transport- and API-faithful core.
 - `paystackgin`, `paystackfiber`, `paystackecho` are thin framework adapters
   that import this package's **interfaces**, never its concrete types.
