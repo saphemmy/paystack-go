@@ -45,5 +45,5 @@ func (t Time) MarshalJSON() ([]byte, error) {
 	if t.IsZero() {
 		return []byte("null"), nil
 	}
-	return json.Marshal(t.Time.Format(time.RFC3339Nano))
+	return json.Marshal(t.Format(time.RFC3339Nano))
 }
