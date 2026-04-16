@@ -5,8 +5,19 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/saphemmy/paystack-go)](https://goreportcard.com/report/github.com/saphemmy/paystack-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-The core Paystack SDK for Go. Lean, testable, caller-autonomous, and extensible
-at every layer.
+A Go SDK for [Paystack](https://paystack.com) — the African payments gateway
+that merchants use to accept card, bank, USSD, mobile-money, and transfer
+payments across Nigeria, Ghana, South Africa, Kenya, and Côte d'Ivoire.
+
+Lean, testable, caller-autonomous, and extensible at every layer. Built
+against the [Paystack REST API](https://paystack.com/docs/api/).
+
+**Useful links:**
+
+- 🏠 Paystack homepage — <https://paystack.com>
+- 📚 API reference — <https://paystack.com/docs/api/>
+- 🔑 Get API keys — <https://dashboard.paystack.com/#/settings/developers>
+- 📡 Webhooks guide — <https://paystack.com/docs/payments/webhooks/>
 
 > **Status:** pre-1.0. Interfaces are stable on `main` but minor versions may
 > introduce additive changes to request/response structs. See
